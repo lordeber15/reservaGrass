@@ -18,8 +18,10 @@ import { DesktopDatePicker } from "@mui/x-date-pickers/DesktopDatePicker";
 import { DemoItem } from "@mui/x-date-pickers/internals/demo";
 import dayjs from "dayjs";
 import { StaticTimePicker } from "@mui/x-date-pickers/StaticTimePicker";
+import { useSnackbar } from "notistack";
 
 export default function Calendar() {
+  const { enqueueSnackbar } = useSnackbar();
   const calendarRef = useRef(null);
   const [value, setValue] = useState(dayjs(new Date()));
   const [open, setOpen] = useState(false);
@@ -82,13 +84,17 @@ export default function Calendar() {
         (fechaHoraInicio <= evento.start && fechaHoraFin >= evento.end)
       );
     });
-
+    const handleClickVariant = (variant) => () => {
+      // variant could be success, error, warning, info, or default
+      enqueueSnackbar("This is a success message!", { variant });
+    };
     // Si hay un evento existente que se cruza, no agregamos el nuevo evento
     if (eventoSuperpuesto) {
       handleClose();
       alert(
         "La nueva fecha y hora se cruza con un evento existente. Elije otra hora."
       );
+      handleClickVariant("success");
       return;
     }
 
