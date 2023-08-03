@@ -26,19 +26,13 @@ export default function Calendar() {
   const [horas, setHoras] = useState(1);
   const now = new Date();
   const validRange = {
-    start: now.toISOString().slice(0, 10), // Fecha actual en formato ISO string
-    end: "9999-12-31", // Fecha máxima en el futuro
-  };
-  const selectConstraint = (arg) => {
-    const selectedStart = arg.start;
-    const currentDateTime = new Date();
-    return selectedStart > currentDateTime;
+    start: now.toISOString(), // Fecha actual en formato ISO string
   };
   const [eventos, setEventos] = useState([
     {
       title: "Reservado",
-      start: "2023-07-24T08:00:00",
-      end: "2023-07-24T10:00:00",
+      start: "2023-07-25T08:00:00",
+      end: "2023-07-25T10:00:00",
       backgroundColor: "#0E6655",
       borderColor: "#0E6655",
       textColor: "#F2F3F4",
@@ -64,7 +58,9 @@ export default function Calendar() {
     return (
       <div className={style.containerEvent}>
         <strong className={style.titleEvent}>{eventInfo.event.title}</strong>
-        <strong className={style.titleEvent}>{eventInfo.timeText}</strong>
+        <strong className={style.titleEvent}>
+          {value == 1 ? "" : eventInfo.timeText}
+        </strong>
       </div>
     );
   };
@@ -89,6 +85,7 @@ export default function Calendar() {
 
     // Si hay un evento existente que se cruza, no agregamos el nuevo evento
     if (eventoSuperpuesto) {
+      handleClose();
       alert(
         "La nueva fecha y hora se cruza con un evento existente. Elije otra hora."
       );
@@ -122,12 +119,18 @@ export default function Calendar() {
         initialView="timeGridWeek"
         slotDuration="01:00:00" // Establece la duración de cada ranura en 1 hora
         slotMinTime="08:00:00" // La hora mínima que se mostrará (en este caso, 8:00 AM)
-        slotMaxTime="23:00:00"
+        slotMaxTime="24:00:00"
         allDaySlot={false}
+        selectable={true}
         events={eventos}
+        slotLabelFormat={{
+          hour: "numeric",
+          minute: "2-digit",
+          omitZeroMinute: false,
+          meridiem: "short",
+        }}
         contentHeight="auto"
         validRange={validRange}
-        selectConstraint={selectConstraint}
         headerToolbar={{
           start: "today prev,next",
           center: "title",
@@ -165,6 +168,7 @@ export default function Calendar() {
                 setHoras(e.target.value);
               }}
               type="number"
+              min
               sx={{ width: "95%" }}
               variant="standard"
             />
