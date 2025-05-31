@@ -57,64 +57,54 @@ export default function Calendar() {
   //   setHoras(1);
   // };
   const renderEventContent = (eventInfo) => {
+    const start = eventInfo.event.start;
+  const end = eventInfo.event.end;
+  const durationHoras = (end - start) / (1000 * 60 * 60); // duración en horas
     return (
       <div className={style.containerEvent}>
         <strong className={style.titleEvent}>{eventInfo.event.title}</strong>
-        <strong className={style.titleEvent}>
-          {value == 1 ? "" : eventInfo.timeText}
-        </strong>
+        {durationHoras > 1 && (
+        <strong className={style.titleEvent}>{eventInfo.timeText}</strong>
+      )}
       </div>
     );
   };
+const handleDateClick = (e) => {
+  e.preventDefault();
 
-  const handleDateClick = (e) => {
-    e.preventDefault();
+  const fechaHoraInicio = value.toDate();
+  const fechaHoraFin = new Date(fechaHoraInicio);
+  fechaHoraFin.setHours(fechaHoraFin.getHours() + parseInt(horas));
 
-    // Aquí obtienes la fecha y hora del clic del usuario
-    const fechaHoraInicio = value["$d"];
-    const fechaHoraFin = new Date(fechaHoraInicio);
-    const sumaHoras = parseInt(fechaHoraFin.getHours()) + parseInt(horas);
-    fechaHoraFin.setHours(sumaHoras);
+  const eventosExistente = calendarRef.current.getApi().getEvents();
+  const eventoSuperpuesto = eventosExistente.find((evento) => {
+    return (
+      (fechaHoraInicio >= evento.start && fechaHoraInicio < evento.end) ||
+      (fechaHoraFin > evento.start && fechaHoraFin <= evento.end) ||
+      (fechaHoraInicio <= evento.start && fechaHoraFin >= evento.end)
+    );
+  });
 
-    const eventosExistente = calendarRef.current.getApi().getEvents();
-    const eventoSuperpuesto = eventosExistente.find((evento) => {
-      return (
-        (fechaHoraInicio >= evento.start && fechaHoraInicio < evento.end) ||
-        (fechaHoraFin > evento.start && fechaHoraFin <= evento.end) ||
-        (fechaHoraInicio <= evento.start && fechaHoraFin >= evento.end)
-      );
-    });
-    const handleClickVariant = (variant) => () => {
-      // variant could be success, error, warning, info, or default
-      enqueueSnackbar("This is a success message!", { variant });
-    };
-    // Si hay un evento existente que se cruza, no agregamos el nuevo evento
-    if (eventoSuperpuesto) {
-      handleClose();
-      alert(
-        "La nueva fecha y hora se cruza con un evento existente. Elije otra hora."
-      );
-      handleClickVariant("success");
-      return;
-    }
-
-    // Aquí creas el nuevo evento con los detalles obtenidos
-    setEventos([
-      ...eventos,
-      {
-        title: "Reservado",
-        start: fechaHoraInicio,
-        end: fechaHoraFin,
-        backgroundColor: "#0E6655",
-        borderColor: "#0E6655",
-        textColor: "#F2F3F4",
-      },
-    ]);
-
-    // Aquí agregas el nuevo evento a la lista de eventos
-    calendarRef.current.getApi().addEvent(eventos);
+  if (eventoSuperpuesto) {
     handleClose();
+    alert("La nueva fecha y hora se cruza con un evento existente. Elije otra hora.");
+    return;
+  }
+
+  const nuevoEvento = {
+    title: "Reservado",
+    start: fechaHoraInicio,
+    end: fechaHoraFin,
+    backgroundColor: "#0E6655",
+    borderColor: "#0E6655",
+    textColor: "#F2F3F4",
   };
+
+  setEventos([...eventos, nuevoEvento]);
+  calendarRef.current.getApi().addEvent(nuevoEvento);
+  handleClose();
+};
+
 
   return (
     <div className={style.containerDate}>
@@ -154,13 +144,15 @@ export default function Calendar() {
               <DemoItem label="Fecha de la Reservas">
                 <DesktopDatePicker
                   value={value}
-                  format="DD/MM/YY"
-                  required
-                  sx={{ width: "95%" }}
+  onChange={(newValue) => setValue(newValue)}
+  format="DD/MM/YY"
+  required
+  sx={{ width: "95%" }}
                 />
               </DemoItem>
               <DemoItem label="Hora de la Resera">
-                <StaticTimePicker defaultValue={value} />
+                <StaticTimePicker value={value}
+  onChange={(newValue) => setValue(newValue)} />
               </DemoItem>
             </LocalizationProvider>
             <TextField
