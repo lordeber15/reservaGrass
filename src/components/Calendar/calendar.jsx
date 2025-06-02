@@ -59,7 +59,6 @@ export default function Calendar() {
     setEventoEditando(null);
     setModoEdicion(false);
     setDeporte("Vóley");
-
   };
   // const handleReset = () => {
   //   handleClose();
@@ -147,7 +146,6 @@ export default function Calendar() {
   return (
     <div className={style.containerDate}>
       <FullCalendar
-        
         ref={calendarRef}
         locale={esLocale}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -156,7 +154,7 @@ export default function Calendar() {
         slotMinTime="08:00:00" // La hora mínima que se mostrará (en este caso, 8:00 AM)
         slotMaxTime="24:00:00"
         allDaySlot={false}
-        selectable={true}
+        selectable={false}
         events={reservas}
         slotLabelFormat={{
           hour: "numeric",
