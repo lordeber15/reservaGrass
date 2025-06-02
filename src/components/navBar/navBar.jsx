@@ -1,6 +1,6 @@
 import logo from "../../assets/hacienda.png";
 import style from "./navBar.module.css";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import Avatar from "@mui/material/Avatar";
 
 export default function NavBar() {

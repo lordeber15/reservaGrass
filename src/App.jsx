@@ -1,14 +1,14 @@
-import style from "./App.module.css";
 import NavBar from "./components/navBar/navBar";
 import Calendar from "./components/Calendar/calendar";
-
+import { Routes, Route } from "react-router";
 function App() {
   return (
-    <div className={style.container}>
-      <NavBar />
-      <Calendar></Calendar>
+    <div>
+      <Routes>
+        <Route path="/" element={<NavBar />} />
+      </Routes>
+      <Calendar />
     </div>
   );
 }
-
 export default App;

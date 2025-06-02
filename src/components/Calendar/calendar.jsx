@@ -18,28 +18,32 @@ import { DesktopDatePicker } from "@mui/x-date-pickers/DesktopDatePicker";
 import { DemoItem } from "@mui/x-date-pickers/internals/demo";
 import dayjs from "dayjs";
 import { StaticTimePicker } from "@mui/x-date-pickers/StaticTimePicker";
-import { useSnackbar } from "notistack";
+import {
+  useReservas,
+  useCrearReservas,
+  useActualizarReserva,
+  useEliminarReserva,
+} from "../hooks/hookreservas";
 
 export default function Calendar() {
-  const { enqueueSnackbar } = useSnackbar();
   const calendarRef = useRef(null);
   const [value, setValue] = useState(dayjs(new Date()));
   const [open, setOpen] = useState(false);
   const [horas, setHoras] = useState(1);
+  const [eventoEditando, setEventoEditando] = useState(null); // evento que se edita
+  const [modoEdicion, setModoEdicion] = useState(false); // true si se edita
+  const [dialogEliminarAbierto, setDialogEliminarAbierto] = useState(false);
+  const [deporte, setDeporte] = useState("Vóley");
+
   const now = new Date();
   const validRange = {
     start: now.toISOString(), // Fecha actual en formato ISO string
   };
-  const [eventos, setEventos] = useState([
-    {
-      title: "Reservado",
-      start: "2023-07-25T08:00:00",
-      end: "2023-07-25T10:00:00",
-      backgroundColor: "#0E6655",
-      borderColor: "#0E6655",
-      textColor: "#F2F3F4",
-    },
-  ]);
+  const { data: reservas = [] } = useReservas();
+  const { mutate: crearReserva } = useCrearReservas();
+  const { mutate: actualizarReserva } = useActualizarReserva();
+  const { mutate: eliminarReserva } = useEliminarReserva();
+
   const handleClickOpen = (info) => {
     setOpen(true);
     const fechaHoraInicio = info.date;
@@ -51,6 +55,11 @@ export default function Calendar() {
   const handleClose = () => {
     setOpen(false);
     setHoras(1);
+    setValue(dayjs());
+    setEventoEditando(null);
+    setModoEdicion(false);
+    setDeporte("Vóley");
+
   };
   // const handleReset = () => {
   //   handleClose();
@@ -58,57 +67,87 @@ export default function Calendar() {
   // };
   const renderEventContent = (eventInfo) => {
     const start = eventInfo.event.start;
-  const end = eventInfo.event.end;
-  const durationHoras = (end - start) / (1000 * 60 * 60); // duración en horas
+    const end = eventInfo.event.end;
+    const durationHoras = (end - start) / (1000 * 60 * 60); // duración en horas
     return (
       <div className={style.containerEvent}>
         <strong className={style.titleEvent}>{eventInfo.event.title}</strong>
         {durationHoras > 1 && (
-        <strong className={style.titleEvent}>{eventInfo.timeText}</strong>
-      )}
+          <strong className={style.titleEvent}>{eventInfo.timeText}</strong>
+        )}
       </div>
     );
   };
-const handleDateClick = (e) => {
-  e.preventDefault();
+  const handleDateClick = (e) => {
+    e.preventDefault();
 
-  const fechaHoraInicio = value.toDate();
-  const fechaHoraFin = new Date(fechaHoraInicio);
-  fechaHoraFin.setHours(fechaHoraFin.getHours() + parseInt(horas));
+    const fechaHoraInicio = value.toDate();
+    const fechaHoraFin = new Date(fechaHoraInicio);
+    fechaHoraFin.setHours(fechaHoraFin.getHours() + parseInt(horas));
 
-  const eventosExistente = calendarRef.current.getApi().getEvents();
-  const eventoSuperpuesto = eventosExistente.find((evento) => {
-    return (
-      (fechaHoraInicio >= evento.start && fechaHoraInicio < evento.end) ||
-      (fechaHoraFin > evento.start && fechaHoraFin <= evento.end) ||
-      (fechaHoraInicio <= evento.start && fechaHoraFin >= evento.end)
-    );
-  });
+    const eventosExistente = calendarRef.current.getApi().getEvents();
+    const eventoSuperpuesto = eventosExistente.find((evento) => {
+      if (modoEdicion && evento.id === eventoEditando.id) return false;
+      return (
+        (fechaHoraInicio >= evento.start && fechaHoraInicio < evento.end) ||
+        (fechaHoraFin > evento.start && fechaHoraFin <= evento.end) ||
+        (fechaHoraInicio <= evento.start && fechaHoraFin >= evento.end)
+      );
+    });
 
-  if (eventoSuperpuesto) {
+    if (eventoSuperpuesto) {
+      handleClose();
+      alert(
+        "La nueva fecha y hora se cruza con un evento existente. Elije otra hora."
+      );
+      return;
+    }
+
+    if (modoEdicion) {
+      eventoEditando.setStart(fechaHoraInicio);
+      eventoEditando.setEnd(fechaHoraFin);
+      eventoEditando.setProp("title", deporte);
+      // Aquí puedes usar el hook para actualizar en base de datos
+      actualizarReserva({
+        id: eventoEditando.id,
+        datos: {
+          start: fechaHoraInicio,
+          end: fechaHoraFin,
+          title: deporte,
+          backgroundColor: "#0E6655",
+          borderColor: "#0E6655",
+          textColor: "#F2F3F4",
+        },
+      });
+    } else {
+      const nuevoEvento = {
+        title: deporte,
+        start: fechaHoraInicio,
+        end: fechaHoraFin,
+        backgroundColor: "#0E6655",
+        borderColor: "#0E6655",
+        textColor: "#F2F3F4",
+      };
+
+      crearReserva(nuevoEvento);
+    }
+
     handleClose();
-    alert("La nueva fecha y hora se cruza con un evento existente. Elije otra hora.");
-    return;
-  }
-
-  const nuevoEvento = {
-    title: "Reservado",
-    start: fechaHoraInicio,
-    end: fechaHoraFin,
-    backgroundColor: "#0E6655",
-    borderColor: "#0E6655",
-    textColor: "#F2F3F4",
   };
 
-  setEventos([...eventos, nuevoEvento]);
-  calendarRef.current.getApi().addEvent(nuevoEvento);
-  handleClose();
-};
-
+  const handleEliminarReserva = () => {
+    if (eventoEditando) {
+      eventoEditando.remove(); // quita del calendario
+      eliminarReserva(eventoEditando.id); // elimina de la base de datos
+      handleClose();
+      setDialogEliminarAbierto(false);
+    }
+  };
 
   return (
     <div className={style.containerDate}>
       <FullCalendar
+        
         ref={calendarRef}
         locale={esLocale}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -118,7 +157,7 @@ const handleDateClick = (e) => {
         slotMaxTime="24:00:00"
         allDaySlot={false}
         selectable={true}
-        events={eventos}
+        events={reservas}
         slotLabelFormat={{
           hour: "numeric",
           minute: "2-digit",
@@ -135,24 +174,50 @@ const handleDateClick = (e) => {
         eventContent={renderEventContent}
         dateClick={handleClickOpen}
         eventOverlap={false}
+        editable={true}
+        eventClick={(info) => {
+          const evento = info.event;
+          setEventoEditando(evento); // Guardamos el evento
+          setValue(dayjs(evento.start)); // Cargamos la fecha
+          setHoras(dayjs(evento.end).diff(dayjs(evento.start), "hour")); // duración
+          setModoEdicion(true);
+          setOpen(true);
+          setDeporte(evento.title);
+        }}
       />
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle>Realizar Reserva</DialogTitle>
         <Box component="form" onSubmit={handleDateClick}>
           <DialogContent>
+            <TextField
+              select
+              label="Tipo de Reserva"
+              value={deporte}
+              onChange={(e) => setDeporte(e.target.value)}
+              sx={{ width: "95%", marginTop: 2 }}
+              SelectProps={{
+                native: true,
+              }}
+            >
+              <option value="Fútbol">Fútbol</option>
+              <option value="Vóley">Vóley</option>
+            </TextField>
+
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DemoItem label="Fecha de la Reservas">
                 <DesktopDatePicker
                   value={value}
-  onChange={(newValue) => setValue(newValue)}
-  format="DD/MM/YY"
-  required
-  sx={{ width: "95%" }}
+                  onChange={(newValue) => setValue(newValue)}
+                  format="DD/MM/YY"
+                  required
+                  sx={{ width: "95%" }}
                 />
               </DemoItem>
               <DemoItem label="Hora de la Resera">
-                <StaticTimePicker value={value}
-  onChange={(newValue) => setValue(newValue)} />
+                <StaticTimePicker
+                  value={value}
+                  onChange={(newValue) => setValue(newValue)}
+                />
               </DemoItem>
             </LocalizationProvider>
             <TextField
@@ -162,20 +227,44 @@ const handleDateClick = (e) => {
               label="Horas"
               value={horas}
               minLength="0"
+              InputProps={{ inputProps: { min: 1, max: 10 } }}
               onChange={(e) => {
                 setHoras(e.target.value);
               }}
               type="number"
-              min
               sx={{ width: "95%" }}
               variant="standard"
             />
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Cancel</Button>
-            <Button type="submit">Guardar</Button>
+            <Button type="submit">
+              {modoEdicion ? "Actualizar" : "Guardar"}
+            </Button>
+            {modoEdicion && (
+              <Button
+                color="error"
+                onClick={() => setDialogEliminarAbierto(true)}
+              >
+                Eliminar
+              </Button>
+            )}
           </DialogActions>
         </Box>
+      </Dialog>
+      <Dialog
+        open={dialogEliminarAbierto}
+        onClose={() => setDialogEliminarAbierto(false)}
+      >
+        <DialogTitle>¿Seguro que deseas eliminar esta reserva?</DialogTitle>
+        <DialogActions>
+          <Button onClick={() => setDialogEliminarAbierto(false)}>
+            Cancelar
+          </Button>
+          <Button color="error" onClick={handleEliminarReserva}>
+            Eliminar
+          </Button>
+        </DialogActions>
       </Dialog>
     </div>
   );
