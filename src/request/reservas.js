@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const reservasApi = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: "https://backendreservagrass-production.up.railway.app/",
 });
 export const getReservas = async () => {
   const res = await reservasApi.get("/reservas");
