@@ -39,8 +39,8 @@ export default function NavBar() {
       ) : (
         <div className={style.avatar}>
           <div className={style.links}>
-            <Link>Reserva</Link>
-            <Link to="/">Venta</Link>
+            {/* <Link>Reserva</Link>
+            <Link to="/">Venta</Link> */}
             <Link
               onClick={() => {
                 setIsAdmin(false);
