@@ -2,10 +2,30 @@ import logo from "../../assets/hacienda.png";
 import style from "./navBar.module.css";
 import { Link } from "react-router";
 import Avatar from "@mui/material/Avatar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function NavBar() {
-  const [admin, setAdmin] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [admin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const storedUserData = localStorage.getItem("userData");
+    if (storedUserData) {
+      setUserData(JSON.parse(storedUserData));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (userData && userData.cargo === "Administrador") {
+      setIsAdmin(true);
+    } else {
+      setIsAdmin(false);
+    }
+  }, [userData]);
+  const handleLogout = () => {
+    localStorage.removeItem("userData");
+    window.location.reload();
+  };
   return (
     <div className={style.container}>
       <div className={style.containerLogo}>
@@ -14,25 +34,20 @@ export default function NavBar() {
       </div>
       {admin == false ? (
         <div className={style.links}>
-          <Link
-            onClick={() => {
-              setAdmin(true);
-            }}
-          >
-            Iniciar Sesion
-          </Link>
+          <Link to={"/login"}>Iniciar Sesion</Link>
         </div>
       ) : (
         <div className={style.avatar}>
           <div className={style.links}>
             <Link>Reserva</Link>
-            <Link>Venta</Link>
+            <Link to="/">Venta</Link>
             <Link
               onClick={() => {
-                setAdmin(false);
+                setIsAdmin(false);
+                handleLogout();
               }}
             >
-              <Avatar>H</Avatar>
+              <Avatar>L</Avatar>
             </Link>
           </div>
         </div>

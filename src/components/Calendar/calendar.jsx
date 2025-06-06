@@ -4,7 +4,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import style from "./calendar.module.css";
 import esLocale from "@fullcalendar/core/locales/es";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import TextField from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -34,6 +34,7 @@ export default function Calendar() {
   const [modoEdicion, setModoEdicion] = useState(false); // true si se edita
   const [dialogEliminarAbierto, setDialogEliminarAbierto] = useState(false);
   const [deporte, setDeporte] = useState("Vóley");
+  const [userData, setUserData] = useState(null);
 
   const now = new Date();
   const validRange = {
@@ -43,6 +44,20 @@ export default function Calendar() {
   const { mutate: crearReserva } = useCrearReservas();
   const { mutate: actualizarReserva } = useActualizarReserva();
   const { mutate: eliminarReserva } = useEliminarReserva();
+
+  const getInitialView = () => {
+    return window.matchMedia("(max-width: 767px)").matches
+      ? "timeGridDay"
+      : "timeGridWeek";
+  };
+
+  useEffect(() => {
+    const storedUserData = localStorage.getItem("userData");
+    if (storedUserData) {
+      setUserData(JSON.parse(storedUserData));
+    }
+  }, []);
+  const esAdmin = userData?.cargo === "Administrador";
 
   const handleClickOpen = (info) => {
     setOpen(true);
@@ -149,7 +164,7 @@ export default function Calendar() {
         ref={calendarRef}
         locale={esLocale}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="timeGridWeek"
+        initialView={getInitialView()}
         slotDuration="01:00:00" // Establece la duración de cada ranura en 1 hora
         slotMinTime="08:00:00" // La hora mínima que se mostrará (en este caso, 8:00 AM)
         slotMaxTime="24:00:00"
@@ -170,16 +185,18 @@ export default function Calendar() {
           end: "",
         }}
         eventContent={renderEventContent}
-        dateClick={handleClickOpen}
         eventOverlap={false}
-        editable={true}
+        dateClick={esAdmin ? handleClickOpen : undefined}
+        editable={esAdmin}
         eventClick={(info) => {
           const evento = info.event;
           setEventoEditando(evento); // Guardamos el evento
           setValue(dayjs(evento.start)); // Cargamos la fecha
           setHoras(dayjs(evento.end).diff(dayjs(evento.start), "hour")); // duración
           setModoEdicion(true);
-          setOpen(true);
+          setOpen(
+            userData && userData.cargo === "Administrador" ? true : false
+          );
           setDeporte(evento.title);
         }}
       />
